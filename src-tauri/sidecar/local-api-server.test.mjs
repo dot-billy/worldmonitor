@@ -1304,6 +1304,40 @@ test('rejects unknown key via /api/local-env-update', async () => {
   }
 });
 
+test('Docker mode rejects runtime environment mutation even with a valid sidecar token', async () => {
+  const originalValue = process.env.OLLAMA_MODEL;
+  const localApi = await setupApiDir({});
+  const app = await createLocalApiServer({
+    port: 0,
+    apiDir: localApi.apiDir,
+    mode: 'docker',
+    logger: { log() { }, warn() { }, error() { } },
+  });
+  const { port } = await app.start();
+
+  try {
+    for (const pathname of ['/api/local-env-update', '/api/local-env-update-batch']) {
+      const response = await authFetch(`http://127.0.0.1:${port}${pathname}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pathname.endsWith('batch')
+          ? { entries: [{ key: 'OLLAMA_MODEL', value: 'attacker-controlled' }] }
+          : { key: 'OLLAMA_MODEL', value: 'attacker-controlled' }),
+      });
+      assert.equal(response.status, 403);
+      assert.deepEqual(await response.json(), {
+        error: 'Runtime configuration updates are disabled in Docker mode',
+      });
+    }
+    assert.equal(process.env.OLLAMA_MODEL, originalValue);
+  } finally {
+    if (originalValue === undefined) delete process.env.OLLAMA_MODEL;
+    else process.env.OLLAMA_MODEL = originalValue;
+    await app.close();
+    await localApi.cleanup();
+  }
+});
+
 test('validates OLLAMA_API_URL via /api/local-validate-secret (reachable endpoint)', async () => {
   // Stand up a mock Ollama server that responds to /v1/models
   const mockOllama = createServer((req, res) => {

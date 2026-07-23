@@ -19,5 +19,5 @@ if [ -z "${LOCAL_API_TOKEN:-}" ]; then
   export LOCAL_API_TOKEN
 fi
 
-envsubst '$LOCAL_API_PORT $LOCAL_API_TOKEN' < /etc/nginx/nginx.conf.template > /tmp/nginx.conf
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/worldmonitor.conf
+envsubst '$LOCAL_API_PORT $LOCAL_API_TOKEN' < /app/nginx.conf.template > /tmp/nginx.conf
+exec /usr/bin/supervisord -c /app/supervisord.conf

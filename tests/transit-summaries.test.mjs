@@ -832,7 +832,7 @@ describe('envelopeRead helper', () => {
 // ---------------------------------------------------------------------------
 // Upstash Redis client selection — runtime behavior for the insecure-http
 // opt-in (regression guard for the incident where the https-only gate
-// silently no-oped every seed loop against http://redis-rest:80 for 4+ days).
+// silently no-oped every seed loop against http://redis-rest:8080 for 4+ days).
 // UPSTASH_ALLOW_INSECURE_HTTP + UPSTASH_HTTP_MODULE decide both whether
 // Redis writes are enabled at all and which Node client (http vs https)
 // upstashGet/Set/etc. use. The source-scan tests above only assert the

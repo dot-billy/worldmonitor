@@ -76,6 +76,11 @@ COPY shared/ ./shared/
 # Data files required by the relay (telegram-channels.json, etc.)
 COPY data/ ./data/
 
+# Repository files may have owner-only modes. Normalize the runtime tree before
+# dropping privileges so the node user can read every copied module while
+# preserving execute bits only where they already exist.
+RUN chown -R node:node /app && chmod -R u=rwX,go=rX /app
+
 EXPOSE 3004
 
 # Use 127.0.0.1, not localhost: localhost resolves to ::1 first, but the relay
@@ -83,5 +88,7 @@ EXPOSE 3004
 # a public (unauthenticated) route in ais-relay.cjs.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3004/health >/dev/null 2>&1 || exit 1
+
+USER node
 
 CMD ["node", "scripts/ais-relay.cjs"]

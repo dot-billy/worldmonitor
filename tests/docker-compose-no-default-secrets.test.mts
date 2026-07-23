@@ -105,7 +105,7 @@ describe('docker self-hosting — no default credentials (#3804)', () => {
 
     assert.match(
       relay,
-      /UPSTASH_REDIS_REST_URL:\s*"http:\/\/redis-rest:80"/,
+      /UPSTASH_REDIS_REST_URL:\s*"http:\/\/redis-rest:8080"/,
       'ais-relay must point UPSTASH_REDIS_REST_URL at the in-network redis-rest proxy',
     );
     assert.match(

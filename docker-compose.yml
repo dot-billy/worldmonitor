@@ -19,10 +19,13 @@ services:
     image: worldmonitor:latest
     container_name: worldmonitor
     ports:
-      - "${WM_PORT:-3000}:8080"
+      # Loopback-only by default. Set WM_BIND_ADDRESS explicitly only when a
+      # trusted reverse proxy or private network must reach this service.
+      - "${WM_BIND_ADDRESS:-127.0.0.1}:${WM_PORT:-3000}:8080"
     environment:
-      UPSTASH_REDIS_REST_URL: "http://redis-rest:80"
+      UPSTASH_REDIS_REST_URL: "http://redis-rest:8080"
       UPSTASH_REDIS_REST_TOKEN: "${REDIS_TOKEN:?REDIS_TOKEN required — generate with: openssl rand -hex 32}"
+      RELAY_SHARED_SECRET: "${RELAY_SHARED_SECRET:?RELAY_SHARED_SECRET required — generate with: openssl rand -hex 32}"
       LOCAL_API_PORT: "46123"
       LOCAL_API_MODE: "docker"
       LOCAL_API_CLOUD_FALLBACK: "false"
@@ -60,6 +63,10 @@ services:
         condition: service_started
       ais-relay:
         condition: service_started
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   ais-relay:
@@ -72,14 +79,19 @@ services:
       AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
       FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
       MARKET_YAHOO_REFRESH_INTERVAL_MS: "${MARKET_YAHOO_REFRESH_INTERVAL_MS:-900000}"
-      UPSTASH_REDIS_REST_URL: "http://redis-rest:80"
+      UPSTASH_REDIS_REST_URL: "http://redis-rest:8080"
       UPSTASH_REDIS_REST_TOKEN: "${REDIS_TOKEN:?REDIS_TOKEN required — generate with: openssl rand -hex 32}"
+      RELAY_SHARED_SECRET: "${RELAY_SHARED_SECRET:?RELAY_SHARED_SECRET required — generate with: openssl rand -hex 32}"
       UPSTASH_ALLOW_INSECURE_HTTP: "true"
       UCDP_ACCESS_TOKEN: "${UCDP_ACCESS_TOKEN:-}"
       PORT: "3004"
     depends_on:
       redis-rest:
         condition: service_started
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   redis:
@@ -95,6 +107,8 @@ services:
       --maxmemory-policy allkeys-lru
     volumes:
       - redis-data:/data
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   redis-rest:
@@ -104,8 +118,9 @@ services:
     image: worldmonitor-redis-rest:latest
     container_name: worldmonitor-redis-rest
     ports:
-      - "127.0.0.1:8079:80"
+      - "127.0.0.1:8079:8080"
     environment:
+      PORT: "8080"
       SRH_TOKEN: "${REDIS_TOKEN:?REDIS_TOKEN required — generate with: openssl rand -hex 32}"
       # Defense-in-depth: the redis service's --requirepass already fails
       # compose validation if REDIS_PASSWORD is unset, but the explicit
@@ -114,6 +129,10 @@ services:
       SRH_CONNECTION_STRING: "redis://:${REDIS_PASSWORD:?REDIS_PASSWORD required — generate with: openssl rand -hex 32}@redis:6379"
     depends_on:
       - redis
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
 # Docker secrets — uncomment and point to your secret files.

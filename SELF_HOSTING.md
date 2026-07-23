@@ -6,7 +6,7 @@ Run the full World Monitor stack locally with Docker/Podman.
 
 - **Docker** or **Podman** (rootless works fine)
 - **Docker Compose** or **podman-compose** (`pip install podman-compose` or `uvx podman-compose`)
-- **Node.js 22+** (for running seed scripts on the host)
+- **Node.js 24+** (for running seed scripts on the host)
 
 ## 🚀 Quick Start
 
@@ -14,7 +14,7 @@ Run the full World Monitor stack locally with Docker/Podman.
 # 1. Clone and enter the repo
 git clone https://github.com/koala73/worldmonitor.git
 cd worldmonitor
-npm install
+npm ci --ignore-scripts
 
 # 2. Generate the REQUIRED secrets. Without these the stack will not start
 #    (see the "Required Environment Variables" table below).
@@ -33,6 +33,19 @@ open http://localhost:3000
 ```
 
 The dashboard works out of the box with public data sources (earthquakes, weather, conflicts, etc.). API keys unlock additional data feeds.
+
+### Safe local defaults
+
+- Compose binds the dashboard to `127.0.0.1` by default. To put it behind a
+  trusted reverse proxy, set `WM_BIND_ADDRESS` to the proxy-facing private
+  address. Do not expose port 3000 directly to an untrusted network.
+- Docker runtime settings are immutable: the desktop-only
+  `/api/local-env-update` endpoints return `403` in Docker mode. Restart the
+  stack with updated secrets instead.
+- `.env`, `.env.*`, and `secrets/` are excluded from Docker build context.
+  Keep `.env.example` as the only non-secret environment template.
+- `RELAY_SHARED_SECRET` is passed to both the dashboard API and AIS relay; the
+  stack fails closed if it is missing.
 
 ## 🔐 Required Environment Variables
 
@@ -201,7 +214,7 @@ docker compose down && docker compose up -d
 
 ### ⚠️ Build Notes
 
-- The Docker image uses **Node.js 22 Alpine** for both builder and runtime stages
+- The Docker image uses **Node.js 24 Alpine** for both builder and runtime stages
 - Blog site build is skipped in Docker (separate dependencies)
 - The runtime stage needs `gettext` (Alpine package) for `envsubst` in the nginx config
 - Docker nginx mirrors Vercel's `script-src` policy and does not allow `'unsafe-inline'`; hash-pin any custom inline scripts before adding them to a self-hosted build.

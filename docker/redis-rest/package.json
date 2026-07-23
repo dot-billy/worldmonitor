@@ -1,0 +1,8 @@
+{
+  "name": "worldmonitor-redis-rest",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "redis": "4.7.1"
+  }
+}

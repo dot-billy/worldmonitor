@@ -175,7 +175,19 @@
          Umami site as the dashboard so the funnel joins end-to-end.
          data-domains must list www (exact-hostname match; apex 301s to www).
          Static nonce satisfies the strict-dynamic CSP. -->
-    <script async defer src="https://abacus.worldmonitor.app/script.js" data-website-id="e8800335-c853-46a8-8497-c993ed2f58bc" data-domains="worldmonitor.app,www.worldmonitor.app,happy.worldmonitor.app" data-exclude-search="true" nonce="wm-static-bootstrap"></script>
+    <script nonce="wm-static-bootstrap">
+      (() => {
+        const domains = ['worldmonitor.app', 'www.worldmonitor.app', 'happy.worldmonitor.app'];
+        if (!domains.includes(window.location.hostname) || '__TAURI_INTERNALS__' in window || '__TAURI__' in window) return;
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://abacus.worldmonitor.app/script.js';
+        script.dataset.websiteId = 'e8800335-c853-46a8-8497-c993ed2f58bc';
+        script.dataset.domains = domains.join(',');
+        script.dataset.excludeSearch = 'true';
+        document.head.appendChild(script);
+      })();
+    </script>
     <meta property="csp-nonce" nonce="wm-static-bootstrap">
     <script type="module" crossorigin src="/pro/assets/index-DCaC4wNa.js" nonce="wm-static-bootstrap"></script>
     <link rel="modulepreload" crossorigin href="/pro/assets/sentry-BCD7T6Eu.js" nonce="wm-static-bootstrap">

@@ -56,16 +56,18 @@ test('checkout-return reconciliation fires success/failed events', () => {
     'checkout-return failed path no longer fires trackCheckoutFailed');
 });
 
-test('/pro and welcome pages load the Umami tracker (www + nonce)', () => {
+test('/pro and welcome pages load Umami only on owned production hosts', () => {
   for (const page of ['pro-test/index.html', 'pro-test/welcome.html']) {
     const html = read(page);
-    const tag = html.match(/<script[^>]+abacus\.worldmonitor\.app\/script\.js[^>]*>/);
-    assert.ok(tag, `${page}: Umami tracker script tag missing`);
-    assert.ok(tag[0].includes('data-website-id="e8800335-c853-46a8-8497-c993ed2f58bc"'),
+    assert.ok(html.includes("domains.includes(window.location.hostname)"),
+      `${page}: tracker must be gated to the owned hostname allowlist`);
+    assert.ok(html.includes("'__TAURI_INTERNALS__' in window") && html.includes("'__TAURI__' in window"),
+      `${page}: tracker must stay disabled in privileged Tauri pages`);
+    assert.ok(html.includes("script.src = 'https://abacus.worldmonitor.app/script.js'"),
+      `${page}: gated tracker source missing`);
+    assert.ok(html.includes("script.dataset.websiteId = 'e8800335-c853-46a8-8497-c993ed2f58bc'"),
       `${page}: tracker website id missing/changed`);
-    assert.ok(/data-domains="[^"]*www\.worldmonitor\.app/.test(tag[0]),
-      `${page}: www.worldmonitor.app missing from tracker data-domains`);
-    assert.ok(tag[0].includes('nonce="wm-static-bootstrap"'),
+    assert.ok(html.includes('<script nonce="wm-static-bootstrap">'),
       `${page}: static CSP nonce missing — strict-dynamic CSP will block the tracker`);
   }
 });
@@ -96,12 +98,12 @@ test('/pro checkout service fires checkout-start on both paths', () => {
 
 test('tracker tags are async and the pro SPA excludes query strings', () => {
   for (const page of ['pro-test/index.html', 'pro-test/welcome.html']) {
-    const tag = read(page).match(/<script[^>]+abacus\.worldmonitor\.app\/script\.js[^>]*>/)[0];
-    assert.ok(/\basync\b/.test(tag),
+    const html = read(page);
+    assert.ok(html.includes('script.async = true'),
       `${page}: tracker must be async — a plain defer script delays DOMContentLoaded behind the analytics host`);
   }
-  const proTag = read('pro-test/index.html').match(/<script[^>]+abacus[^>]*>/)[0];
-  assert.ok(proTag.includes('data-exclude-search="true"'),
+  const proHtml = read('pro-test/index.html');
+  assert.ok(proHtml.includes("script.dataset.excludeSearch = 'true'"),
     'pro-test/index.html: data-exclude-search missing — checkout-intent (wm_checkout_*) and Clerk handshake params would land in analytics');
 });
 
