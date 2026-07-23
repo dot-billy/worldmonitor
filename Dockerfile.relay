@@ -76,6 +76,11 @@ COPY shared/ ./shared/
 # Data files required by the relay (telegram-channels.json, etc.)
 COPY data/ ./data/
 
+# Repository files may have owner-only modes. Normalize the runtime tree before
+# dropping privileges so the node user can read every copied module while
+# preserving execute bits only where they already exist.
+RUN chown -R node:node /app && chmod -R u=rwX,go=rX /app
+
 EXPOSE 3004
 
 # Use 127.0.0.1, not localhost: localhost resolves to ::1 first, but the relay

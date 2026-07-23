@@ -67,6 +67,7 @@ test('container dependency installs are locked and lifecycle scripts are disable
   const appDockerfile = read('Dockerfile');
   assert.match(redisDockerfile, /npm ci --omit=dev --ignore-scripts/);
   assert.match(redisDockerfile, /USER node/);
+  assert.match(relayDockerfile, /chown -R node:node \/app && chmod -R u=rwX,go=rX \/app/);
   assert.match(relayDockerfile, /USER node/);
   assert.match(appDockerfile, /--chmod=0644 docker\/nginx\.conf/);
   assert.match(appDockerfile, /--chmod=0644 docker\/supervisord\.conf/);
