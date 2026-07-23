@@ -12,7 +12,7 @@
  * Env:
  *   REDIS_URL  - Redis connection string (default: redis://redis:6379)
  *   SRH_TOKEN  - Bearer token for auth (default: none)
- *   PORT       - Listen port (default: 80)
+ *   PORT       - Listen port (default: 8080)
  */
 
 import http from 'node:http';
@@ -21,7 +21,7 @@ import { createClient } from 'redis';
 
 const REDIS_URL = process.env.SRH_CONNECTION_STRING || process.env.REDIS_URL || 'redis://redis:6379';
 const TOKEN = process.env.SRH_TOKEN || '';
-const PORT = parseInt(process.env.PORT || '80', 10);
+const PORT = parseInt(process.env.PORT || '8080', 10);
 
 // Redact userinfo before a connection string ever reaches stdout — REDIS_URL
 // carries the Redis password (SRH_CONNECTION_STRING: redis://:<password>@host:port)

@@ -72,9 +72,9 @@ COPY --from=builder /app/data ./data
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Nginx + supervisord configs
-COPY docker/nginx.conf /etc/nginx/nginx.conf.template
-COPY docker/supervisord.conf /etc/supervisor/conf.d/worldmonitor.conf
-COPY docker/entrypoint.sh /app/entrypoint.sh
+COPY --chown=appuser:appgroup --chmod=0644 docker/nginx.conf /app/nginx.conf.template
+COPY --chown=appuser:appgroup --chmod=0644 docker/supervisord.conf /app/supervisord.conf
+COPY --chown=appuser:appgroup --chmod=0755 docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Ensure writable dirs for non-root

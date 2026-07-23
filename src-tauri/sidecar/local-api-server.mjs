@@ -1589,6 +1589,9 @@ async function dispatch(requestUrl, req, routes, context) {
   }
 
   if (requestUrl.pathname === '/api/local-env-update') {
+    if (context.mode === 'docker') {
+      return json({ error: 'Runtime configuration updates are disabled in Docker mode' }, 403);
+    }
     if (req.method === 'POST') {
       const body = await readBody(req);
       if (body) {
@@ -1616,6 +1619,9 @@ async function dispatch(requestUrl, req, routes, context) {
   }
 
   if (requestUrl.pathname === '/api/local-env-update-batch') {
+    if (context.mode === 'docker') {
+      return json({ error: 'Runtime configuration updates are disabled in Docker mode' }, 403);
+    }
     if (req.method !== 'POST') return json({ error: 'POST required' }, 405);
     const body = await readBody(req);
     if (!body) return json({ error: 'expected { entries: [{key, value}, ...] }' }, 400);
@@ -1829,7 +1835,7 @@ export async function createLocalApiServer(options = {}) {
       context.port = boundPort;
       const extraAllowedPrivateOrigins = [];
       // Docker self-host ONLY: the Redis REST proxy (UPSTASH_REDIS_REST_URL)
-      // points at an internal private host (e.g. http://redis-rest:80 on a
+      // points at an internal private host (e.g. http://redis-rest:8080 on a
       // docker network). Without trusting it the SSRF guard blocks every Redis
       // call and all /api/* return 503 REDIS_DOWN. Gated on mode === 'docker'
       // so desktop/production startup never widens the SSRF boundary via env

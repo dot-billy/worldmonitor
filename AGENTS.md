@@ -63,7 +63,7 @@ Real-time global intelligence dashboard. TypeScript SPA (Vite + Preact) with 163
 ## How to Run
 
 ```bash
-npm ci                   # Deterministic install (also runs blog-site postinstall)
+npm ci                   # Deterministic root install; does not install blog dependencies
 npm run dev              # Start Vite dev server (full variant)
 npm run dev:tech         # Start tech-only variant
 npm run dev:energy       # Start energy-security variant
@@ -72,6 +72,8 @@ npm run typecheck:api    # Typecheck API layer separately
 npm run test:data        # Run unit/integration tests
 npm run test:sidecar     # Run sidecar + API handler tests
 npm run test:e2e         # Run all Playwright E2E tests
+npm run install:blog     # Explicit, script-disabled blog dependency install
+npm run build:blog       # Installs blog dependencies, then builds public/blog
 make generate            # Regenerate proto stubs + per-service & unified OpenAPI specs (requires buf + sebuf v0.11.1 plugins)
 npm run worktree:bootstrap          # Fresh worktree: link local env files + npm ci with tmp cache
 npm run worktree:bootstrap:test-only # Fresh docs/test worktree: same, but npm ci --ignore-scripts

@@ -18,7 +18,9 @@ use reqwest::Url;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{AppHandle, Manager, RunEvent, Webview, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{AppHandle, Manager, RunEvent, Webview, WebviewUrl, WebviewWindowBuilder};
+#[cfg(target_os = "macos")]
+use tauri::WindowEvent;
 
 use cache_bounds::validate_cache_write_sizes;
 
@@ -616,14 +618,16 @@ async fn open_live_channels_window_command(
     require_trusted_window(webview.label())?;
     if let Some(ref url) = base_url {
         if !url.is_empty() {
+            if !cfg!(debug_assertions) {
+                return Err("External live-channels URLs are disabled in release builds".to_string());
+            }
             let parsed = Url::parse(url).map_err(|_| "Invalid base URL".to_string())?;
-            match parsed.scheme() {
-                "http" => match parsed.host_str() {
-                    Some("localhost") | Some("127.0.0.1") => {}
-                    _ => return Err("base_url http only allowed for localhost".to_string()),
-                },
-                "https" => {}
-                _ => return Err("base_url must be http(s)".to_string()),
+            if !matches!(parsed.scheme(), "http" | "https")
+                || !matches!(parsed.host_str(), Some("localhost") | Some("127.0.0.1"))
+                || !parsed.username().is_empty()
+                || parsed.password().is_some()
+            {
+                return Err("base_url is restricted to credential-free localhost URLs in development".to_string());
             }
         }
     }
@@ -1382,15 +1386,16 @@ fn main() {
             }
         }
 
-        // WebKit2GTK's bubblewrap sandbox can fail inside an AppImage FUSE
-        // mount, causing blank white screens. Disable it when running as
-        // AppImage — the AppImage itself already provides isolation.
+        // Keep WebKit's bubblewrap sandbox enabled by default. AppImage is a
+        // packaging format, not a security boundary. Operators with a broken
+        // WebKit/AppImage combination may explicitly accept reduced isolation.
         if env::var_os("APPIMAGE").is_some() {
-            // WebKitGTK 2.39.3+ deprecated WEBKIT_FORCE_SANDBOX and now expects
-            // WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 instead.  Setting the
-            // old variable on newer WebKitGTK triggers a noisy deprecation
-            // warning in the system journal, so only set the new one.
-            if env::var_os("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").is_none() {
+            if env::var("WM_DISABLE_WEBKIT_SANDBOX").as_deref() == Ok("1")
+                && env::var_os("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").is_none()
+            {
+                eprintln!(
+                    "[security] WM_DISABLE_WEBKIT_SANDBOX=1: WebKit sandbox disabled; do not use with untrusted content"
+                );
                 unsafe { env::set_var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1") };
             }
             // Prevent GTK from loading host input-method modules that may

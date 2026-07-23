@@ -27,6 +27,7 @@ const UMAMI_WEBSITE_ID = 'e8800335-c853-46a8-8497-c993ed2f58bc';
 // hostname match (`!domains.includes(hostname)` → disabled) — with only the
 // apex listed, every event from the canonical host was silently dropped.
 const UMAMI_DOMAINS = 'worldmonitor.app,www.worldmonitor.app,happy.worldmonitor.app';
+const UMAMI_HOSTS = new Set(UMAMI_DOMAINS.split(','));
 const UMAMI_QUEUE_LIMIT = 50;
 const UMAMI_LOAD_ATTEMPT_LIMIT = 2;
 const UMAMI_LOAD_RETRY_DELAY_MS = 5_000;
@@ -39,6 +40,17 @@ const pendingUmamiCalls: QueuedUmamiCall[] = [];
 let umamiLoadScheduled = false;
 let umamiLoadStarted = false;
 let umamiLoadAttempts = 0;
+
+/**
+ * Remote analytics code is allowed only on explicitly owned production hosts.
+ * Self-hosted, preview, localhost, and privileged Tauri pages never download
+ * JavaScript that is outside the pinned application build.
+ */
+function canLoadRemoteAnalytics(): boolean {
+  if (typeof window === 'undefined') return false;
+  if ('__TAURI_INTERNALS__' in window || '__TAURI__' in window) return false;
+  return UMAMI_HOSTS.has(window.location?.hostname ?? '');
+}
 
 // ---------------------------------------------------------------------------
 // Type-safe event catalog — every event name lives here.
@@ -173,7 +185,7 @@ function flushPendingUmamiCalls(): void {
 }
 
 function loadUmamiScript(): void {
-  if (umamiLoadStarted || typeof document === 'undefined') return;
+  if (!canLoadRemoteAnalytics() || umamiLoadStarted || typeof document === 'undefined') return;
   const existing = document.querySelector<HTMLScriptElement>(`script[src="${UMAMI_SCRIPT_SRC}"]`);
   if (existing) {
     // A script tag already exists (e.g. re-entry after a soft navigation).
@@ -216,7 +228,7 @@ export function track(event: UmamiEvent, data?: Record<string, unknown>): void {
 }
 
 export function initAnalytics(): void {
-  if (umamiLoadScheduled || typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (!canLoadRemoteAnalytics() || umamiLoadScheduled || typeof document === 'undefined') return;
   umamiLoadScheduled = true;
   scheduleAfterFirstPaint(loadUmamiScript, 3000);
 }

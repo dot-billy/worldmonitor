@@ -110,6 +110,7 @@ describe('deferred Umami loader', () => {
       return script;
     };
     const fakeWindow = {
+      location: { hostname: 'www.worldmonitor.app' },
       requestAnimationFrame: (cb: () => void) => {
         cb();
         return 1;
@@ -237,13 +238,18 @@ type FakeUmami = {
  * Umami loader needs (requestAnimationFrame + requestIdleCallback + setTimeout
  * all run their callback inline so scheduleAfterFirstPaint resolves in one tick).
  */
-function installUmamiHarness(opts: { existingScript?: FakeUmamiScript } = {}): {
+function installUmamiHarness(opts: {
+  existingScript?: FakeUmamiScript;
+  hostname?: string;
+  tauri?: boolean;
+} = {}): {
   appendedScripts: FakeUmamiScript[];
   setUmami: (umami: FakeUmami) => void;
   restore: () => void;
 } {
   const appendedScripts: FakeUmamiScript[] = [];
   const fakeWindow: Record<string, unknown> = {
+    location: { hostname: opts.hostname ?? 'www.worldmonitor.app' },
     requestAnimationFrame: (cb: () => void) => {
       cb();
       return 1;
@@ -253,6 +259,7 @@ function installUmamiHarness(opts: { existingScript?: FakeUmamiScript } = {}): {
       return 1;
     },
   };
+  if (opts.tauri) fakeWindow.__TAURI_INTERNALS__ = { invoke() {} };
   const fakeDocument = {
     readyState: 'complete',
     querySelector: () => opts.existingScript ?? null,
@@ -376,6 +383,22 @@ describe('scheduleAfterFirstPaint', () => {
 });
 
 describe('deferred Umami loader — failure and edge paths', () => {
+  it('does not download remote analytics on self-hosted or privileged Tauri origins', async () => {
+    const analytics = await import('../src/services/analytics.ts');
+
+    for (const options of [{ hostname: 'localhost' }, { tauri: true }]) {
+      analytics.resetAnalyticsForTesting();
+      const h = installUmamiHarness(options);
+      try {
+        analytics.track('search-open', { source: 'local' });
+        analytics.initAnalytics();
+        assert.equal(h.appendedScripts.length, 0);
+      } finally {
+        h.restore();
+      }
+    }
+  });
+
   it('stops after the attempt limit and appends no third script on exhaustion', async () => {
     const analytics = await import('../src/services/analytics.ts');
     analytics.resetAnalyticsForTesting();

@@ -14,7 +14,7 @@ Variant identity is controlled by Tauri config:
 
 ## Prerequisites
 
-- Node.js + npm
+- Node.js 24 + npm
 - Rust toolchain
 - OS-native Tauri build prerequisites:
   - macOS: Xcode command-line tools
@@ -25,6 +25,22 @@ Install dependencies (this also installs the pinned Tauri CLI used by desktop sc
 ```bash
 npm ci
 ```
+
+The root install does not install `blog-site` dependencies. Those dependencies
+are needed only for a full web build and are installed explicitly, with npm
+lifecycle scripts disabled, by `npm run install:blog` or `npm run build:blog`.
+
+Linux AppImage builds keep WebKit's sandbox enabled. As a last-resort diagnostic
+for hosts where WebKit cannot start inside AppImage, setting
+`WM_DISABLE_WEBKIT_SANDBOX=1` opts out with a security warning. Do not use that
+override while viewing untrusted or remotely supplied content.
+
+Desktop builds intentionally allow only bundled application scripts. Remote
+JavaScript is blocked by the Tauri CSP, including the Clerk UMD bundles and the
+YouTube iframe-control API. As a result, Clerk sign-in UI and scripted YouTube
+player controls are unavailable in the hardened desktop build; ordinary remote
+frames remain governed by `frame-src`. Do not re-enable remote `script-src`
+hosts without treating them as privileged desktop code dependencies.
 
 All desktop scripts call the local `tauri` binary from `node_modules/.bin`; no runtime `npx` package download is required after `npm ci`.
 If the local CLI is missing, `scripts/desktop-package.mjs` now fails fast with an explicit `npm ci` remediation message.

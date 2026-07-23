@@ -212,7 +212,7 @@ const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 // requirement below (which exists to stop a *real* Upstash bearer token from
 // transiting the public internet in cleartext) doesn't apply there. This
 // gate stayed https-only after the local proxy shipped, so every seed loop
-// in this file silently no-ops against http://redis-rest:80 (see
+// in this file silently no-ops against http://redis-rest:8080 (see
 // SELF_HOSTING.md's redis-rest command allowlist note + 4+ days of
 // "[TransitSummary]"/"[CorridorRisk]"/etc. never firing).
 // UPSTASH_ALLOW_INSECURE_HTTP is an explicit, off-by-default opt-in (never
